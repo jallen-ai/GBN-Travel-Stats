@@ -17,6 +17,7 @@
     --bg:#eef2ee;           /* page */
     --track:#e4ebe5;        /* bar track / gridline */
     --border:#dbe4dc;
+    --row-alt:#f4f8f5;      /* zebra stripe (solid, for sticky column) */
 
     --ink:#14231a;          /* primary text */
     --ink-2:#4c5c52;        /* secondary text */
@@ -39,6 +40,7 @@
       --bg:#0b110d;
       --track:#26332b;
       --border:#26332b;
+      --row-alt:#18211b;
 
       --ink:#e9f1ea;
       --ink-2:#a9b8ae;
@@ -115,19 +117,27 @@
   .tablewrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow-x:auto;-webkit-overflow-scrolling:touch}
   table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
   thead th{
-    position:sticky;top:0;background:var(--surface);
+    position:sticky;top:0;z-index:2;background:var(--surface);
     font-size:11.5px;font-weight:800;color:var(--ink-2);text-transform:uppercase;letter-spacing:.03em;
     padding:11px 8px;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;
     border-bottom:2px solid var(--border);
   }
-  thead th:first-child{text-align:left;padding-left:14px}
+  thead th:first-child{
+    text-align:left;padding-left:14px;
+    position:sticky;left:0;z-index:4;background:var(--surface);
+    border-right:1px solid var(--border);box-shadow:4px 0 8px -6px rgba(16,40,25,.22);
+  }
   thead th.sorted{color:var(--brand-2)}
   thead th .car{opacity:.5;font-size:9px}
   thead th.sorted .car{opacity:1}
   tbody td{padding:10px 8px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--track);font-size:13.5px}
-  tbody td:first-child{text-align:left;padding-left:14px;font-weight:700}
+  tbody td:first-child{
+    text-align:left;padding-left:14px;font-weight:700;
+    position:sticky;left:0;z-index:1;background:var(--surface);
+    border-right:1px solid var(--border);box-shadow:4px 0 8px -6px rgba(16,40,25,.22);
+  }
   tbody tr:last-child td{border-bottom:0}
-  tbody tr:nth-child(odd) td{background:linear-gradient(0deg, rgba(21,127,60,.028), rgba(21,127,60,.028))}
+  tbody tr:nth-child(odd) td{background:var(--row-alt)}
   td .jersey{color:var(--ink-3);font-weight:600;font-size:11.5px;margin-left:5px}
   td.key{font-weight:800;color:var(--ink)}
   .col-avg,.th-avg{background:rgba(232,185,35,.06)}
@@ -291,9 +301,11 @@ function parseRecent(rows){
 /* ============================ RENDER ============================ */
 const TABLE_COLS = [
   {k:'player', t:'Player', kind:'name'},
-  {k:'g',   t:'G'},   {k:'ab', t:'AB'}, {k:'r', t:'R'}, {k:'h', t:'H'},
+  {k:'g',   t:'G'},   {k:'ab', t:'AB'},
+  {k:'avg', t:'AVG', kind:'rate', hi:true},
+  {k:'r', t:'R'}, {k:'h', t:'H'},
   {k:'rbi', t:'RBI'}, {k:'bb', t:'BB'}, {k:'so', t:'SO'},
-  {k:'avg', t:'AVG', kind:'rate', hi:true}, {k:'obp', t:'OBP', kind:'rate', hi:true},
+  {k:'obp', t:'OBP', kind:'rate', hi:true},
   {k:'kpct', t:'K%', kind:'pct'}, {k:'bbpct', t:'BB%', kind:'pct'}
 ];
 let SORT = {k:'avg', dir:-1};
