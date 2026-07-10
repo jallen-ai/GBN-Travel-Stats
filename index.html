@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#0f5a2e" />
+<title>GBN Black — 9U Travel Ball Stats</title>
+<style>
+  /* ---------- Design tokens (GBN Spartans: forest green + gold) ---------- */
+  :root{
+    --brand:#0f5a2e;        /* deep forest green — headers/nav */
+    --brand-2:#157f3c;      /* data green — leaderboard bars */
+    --gold:#e8b923;         /* accent gold */
+    --gold-soft:#f6e6a8;
+
+    --surface:#ffffff;      /* cards */
+    --bg:#eef2ee;           /* page */
+    --track:#e4ebe5;        /* bar track / gridline */
+    --border:#dbe4dc;
+
+    --ink:#14231a;          /* primary text */
+    --ink-2:#4c5c52;        /* secondary text */
+    --ink-3:#7d8c83;        /* muted text */
+
+    --pos:#1a8f4c;          /* up / hot */
+    --neg:#c0392b;          /* down / cold */
+
+    --shadow:0 1px 2px rgba(16,40,25,.06), 0 6px 20px rgba(16,40,25,.06);
+    --radius:14px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --brand:#0c3d20;
+      --brand-2:#34c56a;
+      --gold:#f2cf4c;
+      --gold-soft:#5a4d1a;
+
+      --surface:#141b16;
+      --bg:#0b110d;
+      --track:#26332b;
+      --border:#26332b;
+
+      --ink:#e9f1ea;
+      --ink-2:#a9b8ae;
+      --ink-3:#7d8c83;
+
+      --pos:#3ad07a;
+      --neg:#f0685a;
+
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:960px;margin:0 auto;padding:0 16px 64px}
+
+  /* ---------- Header ---------- */
+  header.top{
+    background:var(--brand);
+    color:#fff;
+    border-bottom:3px solid var(--gold);
+  }
+  .top-inner{max-width:960px;margin:0 auto;padding:18px 16px;display:flex;align-items:center;gap:14px}
+  .badge{
+    width:46px;height:46px;flex:0 0 46px;border-radius:50%;
+    background:radial-gradient(circle at 30% 30%, #1c7a44, #0c3d20);
+    border:2px solid var(--gold);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;letter-spacing:.5px;color:var(--gold);font-size:14px;
+  }
+  .top h1{font-size:19px;margin:0;font-weight:800;letter-spacing:.2px}
+  .top .sub{margin:2px 0 0;font-size:12.5px;color:#cfe6d6;font-weight:500}
+
+  /* ---------- Nav tabs ---------- */
+  nav.tabs{
+    position:sticky;top:0;z-index:20;
+    background:var(--brand);
+    display:flex;gap:2px;max-width:960px;margin:0 auto;padding:0 10px;
+    border-bottom:1px solid rgba(255,255,255,.12);
+  }
+  nav.tabs button{
+    appearance:none;background:none;border:0;cursor:pointer;
+    color:#bcdcc6;font-size:13.5px;font-weight:700;font-family:inherit;
+    padding:12px 12px 10px;border-bottom:3px solid transparent;
+    flex:1;white-space:nowrap;
+  }
+  nav.tabs button.active{color:#fff;border-bottom-color:var(--gold)}
+
+  main{margin-top:18px}
+  .view{display:none}
+  .view.active{display:block}
+
+  h2.section{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:0 2px 10px;font-weight:800}
+
+  /* ---------- Stat tiles ---------- */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:10px;margin-bottom:22px}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 12px 11px;box-shadow:var(--shadow)}
+  .tile .lab{font-size:11px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em}
+  .tile .val{font-size:24px;font-weight:800;margin-top:3px;line-height:1.1;letter-spacing:-.01em}
+  .tile .val.small{font-size:20px}
+
+  /* ---------- Card ---------- */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;margin-bottom:16px}
+  .card h3{margin:0 0 12px;font-size:14.5px;font-weight:800;display:flex;align-items:center;gap:8px}
+  .card h3 .pill{font-size:10.5px;font-weight:700;color:var(--ink-2);background:var(--track);border-radius:20px;padding:2px 8px;letter-spacing:.02em}
+
+  /* ---------- Table ---------- */
+  .tablewrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+  thead th{
+    position:sticky;top:0;background:var(--surface);
+    font-size:11.5px;font-weight:800;color:var(--ink-2);text-transform:uppercase;letter-spacing:.03em;
+    padding:11px 8px;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;
+    border-bottom:2px solid var(--border);
+  }
+  thead th:first-child{text-align:left;padding-left:14px}
+  thead th.sorted{color:var(--brand-2)}
+  thead th .car{opacity:.5;font-size:9px}
+  thead th.sorted .car{opacity:1}
+  tbody td{padding:10px 8px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--track);font-size:13.5px}
+  tbody td:first-child{text-align:left;padding-left:14px;font-weight:700}
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr:nth-child(odd) td{background:linear-gradient(0deg, rgba(21,127,60,.028), rgba(21,127,60,.028))}
+  td .jersey{color:var(--ink-3);font-weight:600;font-size:11.5px;margin-left:5px}
+  td.key{font-weight:800;color:var(--ink)}
+  .col-avg,.th-avg{background:rgba(232,185,35,.06)}
+
+  /* ---------- Leaderboard bars ---------- */
+  .bars{display:flex;flex-direction:column;gap:9px}
+  .bar-row{display:grid;grid-template-columns:104px 1fr auto;align-items:center;gap:10px}
+  .bar-row .who{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar-row .who .jn{color:var(--ink-3);font-weight:600;font-size:11px}
+  .track{background:var(--track);border-radius:6px;height:18px;position:relative;overflow:hidden}
+  .fill{position:absolute;left:0;top:0;bottom:0;background:var(--brand-2);border-radius:0 5px 5px 0;min-width:3px;transition:width .5s cubic-bezier(.2,.7,.2,1)}
+  .bar-row.lead .fill{background:linear-gradient(90deg,var(--brand-2),var(--gold))}
+  .bar-row .val{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;min-width:44px;text-align:right}
+  .lead-tag{color:var(--gold);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin-left:6px}
+
+  /* ---------- Who's Hot ---------- */
+  .hot-list{display:flex;flex-direction:column;gap:10px}
+  .hot{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow)}
+  .rankn{width:26px;height:26px;flex:0 0 26px;border-radius:50%;background:var(--track);color:var(--ink-2);font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center}
+  .hot.top1 .rankn{background:var(--gold);color:#3a2f05}
+  .hot .nm{font-weight:800;font-size:14.5px}
+  .hot .nm .jn{color:var(--ink-3);font-weight:600;font-size:11.5px}
+  .hot .meta{font-size:11.5px;color:var(--ink-3);margin-top:1px}
+  .hot .recent{text-align:right}
+  .hot .recent .r-val{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+  .hot .recent .r-lab{font-size:10px;color:var(--ink-3);font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+  .trend{display:flex;flex-direction:column;align-items:center;min-width:58px}
+  .trend .arrow{font-size:15px;font-weight:800;line-height:1}
+  .trend .d{font-size:11px;font-weight:800;font-variant-numeric:tabular-nums}
+  .trend .sl{font-size:9.5px;color:var(--ink-3);font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin-top:1px}
+  .up .arrow,.up .d{color:var(--pos)}
+  .down .arrow,.down .d{color:var(--neg)}
+  .flat .arrow,.flat .d{color:var(--ink-3)}
+
+  /* ---------- Footer / states ---------- */
+  .foot{margin-top:22px;font-size:11.5px;color:var(--ink-3);text-align:center;line-height:1.7}
+  .foot a{color:var(--ink-2)}
+  .state{padding:48px 16px;text-align:center;color:var(--ink-3);font-size:14px}
+  .spin{width:26px;height:26px;border:3px solid var(--track);border-top-color:var(--brand-2);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 14px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .refresh{appearance:none;background:var(--surface);border:1px solid var(--border);color:var(--ink-2);font:inherit;font-size:12px;font-weight:700;padding:6px 12px;border-radius:20px;cursor:pointer}
+  .updated{font-size:11.5px;color:var(--ink-3);font-weight:600}
+  .toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 2px 14px}
+  .legend{font-size:11.5px;color:var(--ink-3);margin:2px 2px 0}
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="top-inner">
+      <div class="badge">GBN</div>
+      <div>
+        <h1>GBN Black</h1>
+        <p class="sub">9U Travel Ball · Live Team Stats</p>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button data-view="season" class="active">Season Stats</button>
+    <button data-view="leaders">Leaderboards</button>
+    <button data-view="hot">Who's Hot</button>
+  </nav>
+
+  <div class="wrap">
+    <div id="loading" class="state"><div class="spin"></div>Loading team stats…</div>
+    <div id="error" class="state" style="display:none"></div>
+
+    <main id="app" style="display:none">
+      <div class="toolbar">
+        <span class="updated" id="updated"></span>
+        <button class="refresh" id="refreshBtn">↻ Refresh</button>
+      </div>
+
+      <!-- SEASON -->
+      <section class="view active" id="view-season">
+        <div class="tiles" id="tiles"></div>
+        <div class="tablewrap">
+          <table id="statsTable"><thead></thead><tbody></tbody></table>
+        </div>
+        <p class="legend">Tap any column heading to sort. AVG = batting average · OBP = on-base % · K% = strikeout rate · BB% = walk rate.</p>
+      </section>
+
+      <!-- LEADERBOARDS -->
+      <section class="view" id="view-leaders">
+        <div id="leaderCards"></div>
+      </section>
+
+      <!-- WHO'S HOT -->
+      <section class="view" id="view-hot">
+        <div class="card" style="padding:13px 15px">
+          <h3 style="margin:0">🔥 Last 5 games <span class="pill">batting average</span></h3>
+          <p class="legend" style="margin:8px 2px 0">Recent average vs. season average. ▲ trending up, ▼ cooling off.</p>
+        </div>
+        <div class="hot-list" id="hotList"></div>
+      </section>
+
+      <p class="foot">
+        Team stats update automatically as the season goes on.
+      </p>
+    </main>
+  </div>
+
+<script>
+/* ============================================================
+   GBN Black Dashboard — live data from the public Google Sheet
+   No backend, no build step, no dependencies.
+   ============================================================ */
+const SHEET_ID = '1tq_kuJUQohFNciAW70lYSoIH46PZWlMbrFtKf_avz30';
+const TEAM = 'GBN Black';
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`;
+
+/* Fetch a tab by name via the Google Visualization endpoint (CORS-enabled for public sheets). */
+async function fetchSheet(name){
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&headers=0&sheet=${encodeURIComponent(name)}`;
+  const res = await fetch(url, {cache:'no-store'});
+  if(!res.ok) throw new Error(`Sheet request failed (${res.status})`);
+  const txt = await res.text();
+  const json = JSON.parse(txt.substring(txt.indexOf('{'), txt.lastIndexOf('}') + 1));
+  // Return rows as arrays of {v: raw value, f: formatted string}
+  return json.table.rows.map(r => (r.c || []).map(c => c ? {v:c.v, f:(c.f != null ? c.f : c.v)} : {v:null, f:null}));
+}
+
+const cell = (row,i) => (row[i] || {v:null,f:null});
+const num  = (row,i) => { const c = cell(row,i); const n = parseFloat(String(c.v ?? c.f).replace(/[%,$]/g,'')); return isNaN(n)?0:n; };
+const str  = (row,i) => { const c = cell(row,i); return c.f != null ? String(c.f) : (c.v != null ? String(c.v) : ''); };
+const fmtRate = n => n.toFixed(3).replace(/^0\./,'.').replace(/^-0\./,'-.'); // .463
+
+/* ---- Parse Player Totals (cols: 0 Team,2 Player,3 #,4 G,5 AB,6 R,7 H,8 RBI,9 BB,10 SO,11 AVG,12 OBP,13 PA,14 K%,15 BB%) ---- */
+function parseTotals(rows){
+  const out = [];
+  for(const row of rows){
+    if(str(row,0).trim() !== TEAM) continue;
+    if(!str(row,2).trim()) continue;
+    out.push({
+      player:str(row,2).trim(), num:str(row,3).trim(),
+      g:num(row,4), ab:num(row,5), r:num(row,6), h:num(row,7), rbi:num(row,8),
+      bb:num(row,9), so:num(row,10),
+      avg:num(row,11), avgF:str(row,11) || fmtRate(num(row,11)),
+      obp:num(row,12), obpF:str(row,12) || fmtRate(num(row,12)),
+      pa:num(row,13), kpct:num(row,14), kpctF:str(row,14), bbpct:num(row,15), bbpctF:str(row,15)
+    });
+  }
+  return out;
+}
+
+/* ---- Parse Recent Form (cols: 1 Team,2 Player,3 #,4 GP,5 AB,6 H,7 recAVG,8 recOBP) ---- */
+function parseRecent(rows){
+  const out = [];
+  for(const row of rows){
+    if(str(row,1).trim() !== TEAM) continue;
+    if(!str(row,2).trim()) continue;
+    out.push({
+      player:str(row,2).trim(), num:str(row,3).trim(),
+      gp:num(row,4), ab:num(row,5), h:num(row,6),
+      avg:num(row,7), avgF:str(row,7) || fmtRate(num(row,7))
+    });
+  }
+  return out;
+}
+
+/* ============================ RENDER ============================ */
+const TABLE_COLS = [
+  {k:'player', t:'Player', kind:'name'},
+  {k:'g',   t:'G'},   {k:'ab', t:'AB'}, {k:'r', t:'R'}, {k:'h', t:'H'},
+  {k:'rbi', t:'RBI'}, {k:'bb', t:'BB'}, {k:'so', t:'SO'},
+  {k:'avg', t:'AVG', kind:'rate', hi:true}, {k:'obp', t:'OBP', kind:'rate', hi:true},
+  {k:'kpct', t:'K%', kind:'pct'}, {k:'bbpct', t:'BB%', kind:'pct'}
+];
+let SORT = {k:'avg', dir:-1};
+
+function renderTiles(players){
+  const sum = k => players.reduce((a,p)=>a+p[k],0);
+  const ab=sum('ab'), h=sum('h'), pa=sum('pa');
+  const teamAvg = ab ? h/ab : 0;
+  const teamObp = pa ? players.reduce((a,p)=>a + p.obp*p.pa, 0)/pa : 0; // PA-weighted
+  const tiles = [
+    {lab:'Team AVG', val:fmtRate(teamAvg)},
+    {lab:'Team OBP', val:fmtRate(teamObp)},
+    {lab:'Runs', val:sum('r')},
+    {lab:'Hits', val:h},
+    {lab:'RBI', val:sum('rbi')},
+    {lab:'Players', val:players.length, small:true}
+  ];
+  document.getElementById('tiles').innerHTML = tiles.map(t=>
+    `<div class="tile"><div class="lab">${t.lab}</div><div class="val${t.small?' small':''}">${t.val}</div></div>`
+  ).join('');
+}
+
+function renderTable(players){
+  const thead = document.querySelector('#statsTable thead');
+  const tbody = document.querySelector('#statsTable tbody');
+  thead.innerHTML = '<tr>' + TABLE_COLS.map(c=>{
+    const sorted = SORT.k===c.k;
+    const car = sorted ? (SORT.dir<0?'▼':'▲') : '';
+    return `<th data-k="${c.k}" class="${sorted?'sorted':''} ${c.hi?'th-avg':''}">${c.t} <span class="car">${car}</span></th>`;
+  }).join('') + '</tr>';
+
+  const sorted = [...players].sort((a,b)=>{
+    const va=a[SORT.k], vb=b[SORT.k];
+    if(typeof va==='string') return SORT.dir * va.localeCompare(vb);
+    return SORT.dir * (va-vb);
+  });
+
+  tbody.innerHTML = sorted.map(p=>'<tr>' + TABLE_COLS.map(c=>{
+    if(c.kind==='name') return `<td>${p.player}<span class="jersey">#${p.num}</span></td>`;
+    if(c.kind==='rate') return `<td class="key ${c.hi?'col-avg':''}">${p[c.k+'F']||fmtRate(p[c.k])}</td>`;
+    if(c.kind==='pct')  return `<td>${p[c.k+'F']||(p[c.k]+'%')}</td>`;
+    return `<td>${p[c.k]}</td>`;
+  }).join('') + '</tr>').join('');
+
+  thead.querySelectorAll('th').forEach(th=>th.onclick=()=>{
+    const k = th.dataset.k;
+    if(SORT.k===k) SORT.dir *= -1;
+    else SORT = {k, dir: (k==='player'?1:-1)};
+    renderTable(players);
+  });
+}
+
+function renderLeaders(players){
+  const metrics = [
+    {k:'avg',  t:'Batting Average', sub:'AVG', fmt:p=>p.avgF,  val:p=>p.avg},
+    {k:'obp',  t:'On-Base %',       sub:'OBP', fmt:p=>p.obpF,  val:p=>p.obp},
+    {k:'h',    t:'Hits',            sub:'H',   fmt:p=>String(p.h),   val:p=>p.h},
+    {k:'rbi',  t:'Runs Batted In',  sub:'RBI', fmt:p=>String(p.rbi), val:p=>p.rbi},
+    {k:'bbpct',t:'Walk Rate',       sub:'BB%', fmt:p=>p.bbpctF, val:p=>p.bbpct}
+  ];
+  document.getElementById('leaderCards').innerHTML = metrics.map(m=>{
+    const ranked = [...players].sort((a,b)=>m.val(b)-m.val(a));
+    const max = m.val(ranked[0]) || 1;
+    const rows = ranked.map((p,i)=>{
+      const w = Math.max(3, (m.val(p)/max)*100);
+      const lead = i===0;
+      return `<div class="bar-row ${lead?'lead':''}">
+        <div class="who">${p.player}<span class="jn"> #${p.num}</span></div>
+        <div class="track"><div class="fill" style="width:${w}%"></div></div>
+        <div class="val">${m.fmt(p)}${lead?'<span class="lead-tag">▲</span>':''}</div>
+      </div>`;
+    }).join('');
+    return `<div class="card"><h3>${m.t} <span class="pill">${m.sub}</span></h3><div class="bars">${rows}</div></div>`;
+  }).join('');
+}
+
+function renderHot(recent, totals){
+  const byName = Object.fromEntries(totals.map(p=>[p.player, p]));
+  const ranked = [...recent].sort((a,b)=>b.avg-a.avg);
+  document.getElementById('hotList').innerHTML = ranked.map((p,i)=>{
+    const season = byName[p.player];
+    const seasonAvg = season ? season.avg : 0;
+    const delta = p.avg - seasonAvg;
+    const dir = Math.abs(delta) < 0.0005 ? 'flat' : (delta>0 ? 'up' : 'down');
+    const arrow = dir==='up'?'▲':dir==='down'?'▼':'▬';
+    const deltaTxt = (delta>=0?'+':'−') + fmtRate(Math.abs(delta)).replace(/^\./,'.');
+    return `<div class="hot ${i===0?'top1':''} ${dir}">
+      <div class="rankn">${i+1}</div>
+      <div>
+        <div class="nm">${p.player}<span class="jn"> #${p.num}</span></div>
+        <div class="meta">${p.h} for ${p.ab} · last ${p.gp} games · season ${season?season.avgF:'—'}</div>
+      </div>
+      <div class="recent"><div class="r-val">${p.avgF}</div><div class="r-lab">Recent</div></div>
+      <div class="trend ${dir}"><div class="arrow">${arrow}</div><div class="d">${dir==='flat'?'even':deltaTxt}</div><div class="sl">vs szn</div></div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================ LOAD ============================ */
+async function load(){
+  document.getElementById('loading').style.display='';
+  document.getElementById('error').style.display='none';
+  document.getElementById('app').style.display='none';
+  try{
+    const [totalsRows, recentRows] = await Promise.all([
+      fetchSheet('Player Totals'),
+      fetchSheet('Recent Form')
+    ]);
+    const players = parseTotals(totalsRows);
+    const recent  = parseRecent(recentRows);
+    if(!players.length) throw new Error('No GBN Black rows found in the sheet.');
+
+    renderTiles(players);
+    renderTable(players);
+    renderLeaders(players);
+    renderHot(recent, players);
+
+    const now = new Date();
+    document.getElementById('updated').textContent =
+      'Updated ' + now.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+
+    document.getElementById('loading').style.display='none';
+    document.getElementById('app').style.display='';
+  }catch(err){
+    document.getElementById('loading').style.display='none';
+    const e = document.getElementById('error');
+    e.style.display='';
+    e.innerHTML = `Couldn't load the stats.<br><span style="font-size:12px">${err.message}</span><br><br>
+      <button class="refresh" onclick="load()">Try again</button>`;
+  }
+}
+
+/* Tab switching */
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+});
+document.getElementById('refreshBtn').onclick=load;
+
+load();
+</script>
+</body>
+</html>
