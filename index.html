@@ -172,6 +172,14 @@
   .down .arrow,.down .d{color:var(--neg)}
   .flat .arrow,.flat .d{color:var(--ink-3)}
 
+  /* ---------- Trending slider ---------- */
+  .control{-webkit-user-select:none;user-select:none}
+  .slider-wrap{display:flex;align-items:center;gap:12px;margin-top:2px}
+  .slider-wrap input[type=range]{flex:1;accent-color:var(--brand-2);height:26px;cursor:pointer}
+  .slider-end{font-size:11px;font-weight:800;color:var(--ink-3);font-variant-numeric:tabular-nums;min-width:16px;text-align:center}
+  .slider-value{text-align:center;margin-top:6px;font-size:12.5px;color:var(--ink-2);font-weight:700}
+  .slider-value b{font-size:20px;color:var(--ink);font-weight:800;font-variant-numeric:tabular-nums}
+
   /* ---------- Footer / states ---------- */
   .foot{margin-top:22px;font-size:11.5px;color:var(--ink-3);text-align:center;line-height:1.7}
   .foot a{color:var(--ink-2)}
@@ -198,7 +206,7 @@
   <nav class="tabs">
     <button data-view="season" class="active">Season Stats</button>
     <button data-view="leaders">Leaderboards</button>
-    <button data-view="hot">Who's Hot</button>
+    <button data-view="trending">Trending</button>
   </nav>
 
   <div class="wrap">
@@ -225,13 +233,19 @@
         <div id="leaderCards"></div>
       </section>
 
-      <!-- WHO'S HOT -->
-      <section class="view" id="view-hot">
-        <div class="card" style="padding:13px 15px">
-          <h3 style="margin:0">🔥 Last 5 games <span class="pill">batting average</span></h3>
-          <p class="legend" style="margin:8px 2px 0">Recent average vs. season average. ▲ trending up, ▼ cooling off.</p>
+      <!-- TRENDING -->
+      <section class="view" id="view-trending">
+        <div class="card control">
+          <h3 style="margin:0">📈 Trending <span class="pill" id="windowLabel">Last 5 games</span></h3>
+          <p class="legend" style="margin:8px 2px 12px">Batting average over the team's most recent games vs. season average. Slide to change how many games. ▲ up, ▼ cooling off.</p>
+          <div class="slider-wrap">
+            <span class="slider-end">1</span>
+            <input type="range" id="gamesSlider" min="1" max="20" step="1" value="5" aria-label="Number of recent games">
+            <span class="slider-end" id="sliderMax">20</span>
+          </div>
+          <div class="slider-value"><b id="sliderVal">5</b> games</div>
         </div>
-        <div class="hot-list" id="hotList"></div>
+        <div class="hot-list" id="trendList"></div>
       </section>
 
       <p class="foot">
@@ -283,19 +297,40 @@ function parseTotals(rows){
   return out;
 }
 
-/* ---- Parse Recent Form (cols: 1 Team,2 Player,3 #,4 GP,5 AB,6 H,7 recAVG,8 recOBP) ---- */
-function parseRecent(rows){
+/* ---- Parse Game Log (cols: 0 Team,1 Player,2 #,4 AB,6 H,8 BB,12 Gm#) ---- */
+function parseGameLog(rows){
   const out = [];
   for(const row of rows){
-    if(str(row,1).trim() !== TEAM) continue;
-    if(!str(row,2).trim()) continue;
-    out.push({
-      player:str(row,2).trim(), num:str(row,3).trim(),
-      gp:num(row,4), ab:num(row,5), h:num(row,6),
-      avg:num(row,7), avgF:str(row,7) || fmtRate(num(row,7))
-    });
+    if(str(row,0).trim() !== TEAM) continue;
+    const player = str(row,1).trim();
+    const gm = num(row,12);
+    if(!player || !gm) continue;
+    out.push({player, num:str(row,2).trim(), gm, ab:num(row,4), h:num(row,6), bb:num(row,8)});
   }
   return out;
+}
+
+/* ---- Aggregate the team's last N games per player (matches the sheet's Recent Form logic) ---- */
+function computeTrending(N){
+  const gmNums = [...new Set(GAMELOG.map(g=>g.gm))].sort((a,b)=>a-b);
+  const windowGames = new Set(gmNums.slice(-N));
+  const agg = {};
+  for(const g of GAMELOG){
+    if(!windowGames.has(g.gm)) continue;
+    const a = agg[g.player] || (agg[g.player] = {player:g.player, num:g.num, ab:0, h:0, gp:0});
+    a.ab += g.ab; a.h += g.h; a.gp += 1;
+  }
+  const byName = Object.fromEntries(TOTALS.map(p=>[p.player, p]));
+  const list = Object.values(agg).map(a=>{
+    const avg = a.ab ? a.h/a.ab : null;
+    return {...a, avg, avgF: avg==null ? '—' : fmtRate(avg), season: byName[a.player]};
+  });
+  list.sort((x,y)=>{
+    if((x.avg==null) !== (y.avg==null)) return x.avg==null ? 1 : -1;  // batters first
+    if(x.avg==null) return 0;
+    return y.avg - x.avg;                                             // best average first
+  });
+  return {list, windowCount: windowGames.size};
 }
 
 /* ============================ RENDER ============================ */
@@ -309,6 +344,7 @@ const TABLE_COLS = [
   {k:'kpct', t:'K%', kind:'pct'}, {k:'bbpct', t:'BB%', kind:'pct'}
 ];
 let SORT = {k:'avg', dir:-1};
+let TOTALS = [], GAMELOG = [];
 
 function renderTiles(players){
   const sum = k => players.reduce((a,p)=>a+p[k],0);
@@ -382,24 +418,29 @@ function renderLeaders(players){
   }).join('');
 }
 
-function renderHot(recent, totals){
-  const byName = Object.fromEntries(totals.map(p=>[p.player, p]));
-  const ranked = [...recent].sort((a,b)=>b.avg-a.avg);
-  document.getElementById('hotList').innerHTML = ranked.map((p,i)=>{
-    const season = byName[p.player];
+function renderTrending(N){
+  const {list, windowCount} = computeTrending(N);
+  document.getElementById('windowLabel').textContent = `Last ${windowCount} game${windowCount!==1?'s':''}`;
+  document.getElementById('sliderVal').textContent = windowCount;
+  document.getElementById('trendList').innerHTML = list.map((p,i)=>{
+    const season = p.season;
     const seasonAvg = season ? season.avg : 0;
-    const delta = p.avg - seasonAvg;
-    const dir = Math.abs(delta) < 0.0005 ? 'flat' : (delta>0 ? 'up' : 'down');
-    const arrow = dir==='up'?'▲':dir==='down'?'▼':'▬';
-    const deltaTxt = (delta>=0?'+':'−') + fmtRate(Math.abs(delta)).replace(/^\./,'.');
-    return `<div class="hot ${i===0?'top1':''} ${dir}">
+    const hasAvg = p.avg != null;
+    let dir='flat', arrow='▬', deltaTxt='even';
+    if(hasAvg){
+      const delta = p.avg - seasonAvg;
+      dir = Math.abs(delta) < 0.0005 ? 'flat' : (delta>0 ? 'up' : 'down');
+      arrow = dir==='up'?'▲':dir==='down'?'▼':'▬';
+      deltaTxt = (delta>=0?'+':'−') + fmtRate(Math.abs(delta));
+    }
+    return `<div class="hot ${hasAvg && i===0 ? 'top1':''} ${dir}">
       <div class="rankn">${i+1}</div>
       <div>
         <div class="nm">${p.player}<span class="jn"> #${p.num}</span></div>
-        <div class="meta">${p.h} for ${p.ab} · last ${p.gp} games · season ${season?season.avgF:'—'}</div>
+        <div class="meta">${p.h} for ${p.ab} · ${p.gp} of ${windowCount} game${windowCount!==1?'s':''} · season ${season?season.avgF:'—'}</div>
       </div>
       <div class="recent"><div class="r-val">${p.avgF}</div><div class="r-lab">Recent</div></div>
-      <div class="trend ${dir}"><div class="arrow">${arrow}</div><div class="d">${dir==='flat'?'even':deltaTxt}</div><div class="sl">vs szn</div></div>
+      <div class="trend ${dir}"><div class="arrow">${hasAvg?arrow:''}</div><div class="d">${hasAvg?(dir==='flat'?'even':deltaTxt):'—'}</div><div class="sl">vs szn</div></div>
     </div>`;
   }).join('');
 }
@@ -410,18 +451,26 @@ async function load(){
   document.getElementById('error').style.display='none';
   document.getElementById('app').style.display='none';
   try{
-    const [totalsRows, recentRows] = await Promise.all([
+    const [totalsRows, gameRows] = await Promise.all([
       fetchSheet('Player Totals'),
-      fetchSheet('Recent Form')
+      fetchSheet('Game Log')
     ]);
-    const players = parseTotals(totalsRows);
-    const recent  = parseRecent(recentRows);
-    if(!players.length) throw new Error('No GBN Black rows found in the sheet.');
+    TOTALS  = parseTotals(totalsRows);
+    GAMELOG = parseGameLog(gameRows);
+    if(!TOTALS.length) throw new Error('No GBN Black rows found in the sheet.');
 
-    renderTiles(players);
-    renderTable(players);
-    renderLeaders(players);
-    renderHot(recent, players);
+    renderTiles(TOTALS);
+    renderTable(TOTALS);
+    renderLeaders(TOTALS);
+
+    // Size the Trending slider to the team's game count, then render.
+    const totalGames = new Set(GAMELOG.map(g=>g.gm)).size || 1;
+    const slider = document.getElementById('gamesSlider');
+    slider.max = totalGames;
+    document.getElementById('sliderMax').textContent = totalGames;
+    const defN = Math.min(5, totalGames);
+    slider.value = defN;
+    renderTrending(defN);
 
     const now = new Date();
     document.getElementById('updated').textContent =
@@ -449,6 +498,7 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
   };
 });
 document.getElementById('refreshBtn').onclick=load;
+document.getElementById('gamesSlider').addEventListener('input', e => renderTrending(parseInt(e.target.value,10)));
 
 load();
 </script>
